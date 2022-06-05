@@ -12,6 +12,7 @@ const customBtn = document.getElementById("upload")
 const messageTemplate = document.querySelector('#message-template').innerHTML
 const locationMessageTemplate = document.querySelector('#location-message-template').innerHTML
 const imageTemplate = document.querySelector('#image-message-template').innerHTML
+const fileTemplate = document.querySelector('#file-message-template').innerHTML
 const sidebarTemplate = document.querySelector('#sidebar-template').innerHTML
 
 // Options
@@ -63,14 +64,27 @@ socket.on('locationMessage', (message) => {
 })
 
 socket.on('imageMessage', (message) => {
-    console.log(message)
-    const html = Mustache.render(imageTemplate, {
-        username: message.username,
-        url: message.url,
-        createdAt: moment(message.createdAt).format('h:mm a')
-    })
-    $messages.insertAdjacentHTML('beforeend', html)
-    autoscroll()
+	const fileType = message.url.substring("data:".length, message.url.indexOf(";base64"));
+	let html = '';
+	
+	if(fileType.indexOf("image") >= 0){
+		html = Mustache.render(imageTemplate, {
+			username: message.username,
+			url: message.url,
+			createdAt: moment(message.createdAt).format('h:mm a')
+		})	
+	}
+	else{
+		html = Mustache.render(fileTemplate, {
+			username: message.username,
+			url: message.url,
+			createdAt: moment(message.createdAt).format('h:mm a'),
+			file_name: fileType
+		})
+	}
+	
+	$messages.insertAdjacentHTML('beforeend', html)
+	autoscroll()
 })
 
 socket.on('roomData', ({ room, users }) => {
@@ -150,3 +164,11 @@ realFileBtn.addEventListener("change", function () {
     };
     reader.readAsDataURL(realFileBtn.files[0]);
 })
+
+function downloadBase64(base64File){
+	const linkSource = `${base64File}`;
+	const downloadLink = document.createElement("a");
+	downloadLink.href = linkSource;
+	downloadLink.download = new Date().getTime();
+	downloadLink.click();
+}
